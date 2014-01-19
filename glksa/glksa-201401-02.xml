@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/xsl/glsa.xsl" type="text/xsl"?>
+<?xml-stylesheet href="/xsl/guide.xsl" type="text/xsl"?>
+<!DOCTYPE glsa SYSTEM "http://www.gentoo.org/dtd/glsa.dtd">
+<glksa id="201401-02">
+  <title>Fake Control Vulnerability</title>
+  <synopsis>Fake Vulnerability</synopsis>
+  <product type="infrastructure"></product>
+  <announced>January 17, 2014</announced>
+  <affected>
+    <unaffected range="eq">0.0.0</unaffected>
+    <vulnerable range="ne">0.0.0</vulnerable>
+    <config value="y">X86</config>
+  </affected>
+  <workaround>
+    <p>There is no known workaround at this time.</p>
+  </workaround>
+  <resolution>
+    <p>All users should upgrade to the latest version.</p>
+  </resolution>
+  <references>
+  </references>
+  <metadata tag="requester" timestamp="Fri, 17 Jan 2012 01:49:44 +0000">sdamashek</metadata>
+  <metadata tag="submitter" timestamp="Fri, 17 Jan 2014 14:13:14 +0000">sdamashek</metadata>
+</glksa>
