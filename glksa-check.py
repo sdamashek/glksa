@@ -1,16 +1,13 @@
 #!/usr/bin/python
 
 import sys
-import os
 import xml.dom.minidom
 from functools import reduce
 import gzip
 import re
 
 import portage
-from portage.output import *
-from io import StringIO
-from gentoolkit.glsa import *
+from gentoolkit.glsa import format_date, get_glsa_list, getText
 from portage.versions import vercmp
 
 from getopt import getopt, GetoptError
@@ -18,39 +15,46 @@ from getopt import getopt, GetoptError
 kv = re.compile(r'#.*?((?:\d+\.)+(?:\d+)).*Kernel Configuration')
 kc = re.compile(r'[\n\^]CONFIG_([^=\n^]+)=([^\n$]+)')
 opMapping = {
-        'le': '<=',
-        'lt': '<',
-        'ge': '>=',
-        'gt': '>',
-        'eq': '=',
-        'ne': '!=',
+    'le': '<=',
+    'lt': '<',
+    'ge': '>=',
+    'gt': '>',
+    'eq': '=',
+    'ne': '!=',
 }
 
+
 class GlksaTypeException(Exception):
-	def __init__(self, doctype):
-		Exception.__init__(self, "wrong DOCTYPE: %s" % doctype)
+    def __init__(self, doctype):
+        Exception.__init__(self, "wrong DOCTYPE: %s" % doctype)
+
 
 class GlksaFormatException(Exception):
-	pass
+    pass
+
 
 class GlksaArgumentException(Exception):
-	pass
+    pass
+
 
 class GlksaException(Exception):
     pass
+
 
 def makeConfig(c):
     rValue = (c.getAttribute("value"), getText(c, format="strip"))
     return rValue
 
+
 def makeVersion(c):
     rValue = (opMapping[c.getAttribute("range")], getText(c, format="strip"))
     return rValue
 
+
 def getKernelVersion():
     try:
         f = gzip.open('/proc/config.gz')
-    except IOError as e:
+    except IOError:
         raise GlksaException("/proc/config.gz is required for glksa-check to operate. Please enable /proc/config.gz in your kernel.")
     kernel_config = str(f.read())
     f.close()
@@ -60,17 +64,18 @@ def getKernelVersion():
     version = version[0]
     return version
 
+
 def getKernelOptions():
     try:
         f = gzip.open('/proc/config.gz')
-    except IOError as e:
+    except IOError:
         raise GlksaException("/proc/config.gz is required for glksa-check to operate. Please enable /proc/config.gz in your kernel.")
     kernel_config = str(f.read())
     f.close()
     config = kc.findall(kernel_config)
     return config
 
-    
+
 class Glksa:
     def __init__(self, myid, myconfig):
         self.nr = myid
@@ -95,11 +100,10 @@ class Glksa:
         self.vul_vers = [makeVersion(v) for v in self.affected.getElementsByTagName("vulnerable")]
         self.unaff_vers = [makeVersion(v) for v in self.affected.getElementsByTagName("unaffected")]
         self.vul_configs = [makeConfig(v) for v in self.affected.getElementsByTagName("config")]
-        
 
     def isVulnerable(self):
         rValue = True
-        
+
         v = getKernelVersion()
         c = getKernelOptions()
 
@@ -107,10 +111,14 @@ class Glksa:
             value = vul[0]
             version = vul[1]
             match = False
-            if (value == '<' or value == '<=') and vercmp(version, v) == 1: match = True
-            if (value == '=' or value == '<=' or value == '>=') and vercmp(version, v) == 0:    match = True
-            if (value == '>' or value == '>=') and vercmp(version, v) == -1:    match = True
-            if (value == '!=') and vercmp(version, v) != 0: match = True
+            if (value == '<' or value == '<=') and vercmp(version, v) == 1:
+                match = True
+            if (value == '=' or value == '<=' or value == '>=') and vercmp(version, v) == 0:
+                match = True
+            if (value == '>' or value == '>=') and vercmp(version, v) == -1:
+                match = True
+            if (value == '!=') and vercmp(version, v) != 0:
+                match = True
             if not match:
                 rValue = False
 
@@ -120,21 +128,22 @@ class Glksa:
             for conf_current in c:
                 if re.match(conf[0], conf_current[1]):
                     exists = True
-                    if re.match(conf[1], conf_current[0]): match = True
-            if not(match) and not(exists and conf[0] == ""):
+                    if re.match(conf[1], conf_current[0]):
+                        match = True
+            if not match and not(exists and conf[0] == ""):
                 rValue = False
 
         return rValue
 
 optionmap = [
-        ["-l", "--list", "list all the GLKSAs you are affected by"],
-        ["-h", "--help", "print help page"],
+    ["-l", "--list", "list all the GLKSAs you are affected by"],
+    ["-h", "--help", "print help page"],
 ]
 
 args = []
 params = []
 try:
-    args, params = getopt(sys.argv[1:], ''.join([opt[0][1] for opt in optionmap]), [x[2:] for x in reduce(lambda x,y: x+y, [z[1:-1] for z in optionmap])])
+    args, params = getopt(sys.argv[1:], ''.join([opt[0][1] for opt in optionmap]), [x[2:] for x in reduce(lambda x, y: x+y, [z[1:-1] for z in optionmap])])
     args = [a for a, b in args]
 
     if len(args) <= 0:
@@ -183,4 +192,3 @@ if mode == "list":
         if glksa.isVulnerable():
             status = "AFFECTED"
         sys.stdout.write("[%s] %s: %s\n" % (status, glksa.glksaid, glksa.title))
-
